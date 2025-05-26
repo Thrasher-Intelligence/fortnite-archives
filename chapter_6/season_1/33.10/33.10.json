@@ -1,8 +1,10 @@
 {
   "locations": [
-    "LEGO Fortnite:Bobom Milk Tea",
     "Masked Meadows",
-    "LEGO Fortnite:Mourndale Academy",
     "Nightshift Forest"
+  ],
+  "items": [
+    "Big Pot",
+    "Chug Splash"
   ]
 }
