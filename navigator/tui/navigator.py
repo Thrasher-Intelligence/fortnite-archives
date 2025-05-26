@@ -1,9 +1,9 @@
 from blessed import Terminal
 import os
+import sys
+from navigator.tui.editor import EditorTUI
 
 term = Terminal()
-
-import sys
 
 class NavigatorTUI:
     def __init__(self, navigator):
@@ -80,6 +80,10 @@ class NavigatorTUI:
                         self.scroll_file(-(height - 2), height)
                     elif key.name == 'KEY_NPAGE':
                         self.scroll_file(height - 2, height)
+                    elif key.lower() == 'e':
+                        self.edit_current_file()
+                        self.draw(height, width)
+                        continue
                     elif key.name in ('KEY_BACKSPACE', 'KEY_ESCAPE'):
                         self.viewing_file = False
                         self.draw(height, width)
@@ -140,7 +144,10 @@ class NavigatorTUI:
             self.draw_file_view(height, width)
         else:
             self.draw_directory_view(height, width)
-        print(term.move(height - 1, 0) + term.reverse(' Press q to quit, Enter to open, Backspace to up, f to search ') + term.normal)
+        if self.viewing_file:
+            print(term.move(height - 1, 0) + term.reverse(' Press q to quit, e to edit, Backspace to return ') + term.normal)
+        else:
+            print(term.move(height - 1, 0) + term.reverse(' Press q to quit, Enter to open, Backspace to up, f to search ') + term.normal)
 
     def draw_search_prompt(self, height, width):
         prompt = "Search locations: " + self.search_query
@@ -217,3 +224,28 @@ class NavigatorTUI:
         elif new_offset > max(0, len(self.file_content_lines) - max_display):
             new_offset = max(0, len(self.file_content_lines) - max_display)
         self.file_line_offset = new_offset
+        
+    def edit_current_file(self):
+        """Launch the editor for the current file"""
+        if not self.viewing_file or not self.file_path:
+            return
+            
+        # Exit fullscreen mode temporarily and show cursor
+        print(term.normal_cursor)
+        
+        try:
+            # Launch editor with current file content
+            updated_content = EditorTUI(self.file_path, self.file_content_lines, term).run()
+            
+            if updated_content:
+                # Save changes to file
+                try:
+                    with open(self.file_path, 'w') as f:
+                        f.write('\n'.join(updated_content))
+                    self.file_content_lines = updated_content
+                except Exception as e:
+                    # If we can't save, at least update the in-memory view
+                    self.file_content_lines = [f"Error saving file: {str(e)}"] + updated_content
+        finally:
+            # Make sure we hide the cursor again when done
+            print(term.hidden_cursor)
